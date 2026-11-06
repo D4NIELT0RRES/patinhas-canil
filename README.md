@@ -9,6 +9,7 @@ Feito para voluntários que não entendem de tecnologia: botões grandes, textos
 
 [![Online](https://img.shields.io/badge/site-online-2a8f6a?style=for-the-badge)](https://patinhas-canil.vercel.app)
 [![Vercel](https://img.shields.io/badge/deploy-Vercel-000000?style=for-the-badge&logo=vercel)](https://patinhas-canil.vercel.app)
+[![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue?style=for-the-badge)](LICENSE)
 [![Supabase](https://img.shields.io/badge/dados-Supabase-3ecf8e?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 ![JavaScript](https://img.shields.io/badge/JavaScript-puro-f7df1e?style=for-the-badge&logo=javascript&logoColor=black)
 
@@ -217,3 +218,9 @@ Se a ONG quiser proteger o acesso no futuro, o caminho é adicionar login (Supab
 - menu fixo na parte de baixo da tela no celular e botão **+ Novo animal** sempre visível;
 - foco visível para navegação por teclado e rótulos para leitores de tela;
 - respeita a preferência de movimento reduzido do sistema.
+
+---
+
+## Licença
+
+Distribuído sob a [licença MIT](LICENSE): você pode usar, copiar, modificar e distribuir o código, inclusive em outras ONGs, mantendo o aviso de copyright.
