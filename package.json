@@ -1,0 +1,10 @@
+{
+  "name": "patinhas-canil",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Patinhas: cadastro de animais, vacinas e canis para ONGs de protecao animal.",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0"
+  }
+}

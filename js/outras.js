@@ -151,21 +151,40 @@ async function viewCanis() {
 // ---------- Pendências ----------
 
 async function viewPendencias() {
-  const lista = Store.animais
-    .map((a) => ({ a, pendentes: pendenciasDe(a) }))
-    .filter(({ pendentes }) => pendentes.length)
-    .sort((x, y) => y.pendentes.length - x.pendentes.length || x.a.nome.localeCompare(y.a.nome, "pt-BR"));
+  const linhaAnimal = (a, chips) => `
+    <a class="linha linha-link" href="#/animal/${a.id}/saude">
+      <div class="mini-foto">${fotoOuPata(a, 30)}</div>
+      <div class="linha-info"><strong>${esc(a.nome)}</strong><span>${esc(nomeCanil(a))}</span>
+        <div class="chips">${chips}</div>
+      </div>
+    </a>`;
+  const porNome = (x, y) => x.a.nome.localeCompare(y.a.nome, "pt-BR");
+
+  const pendentes = Store.animais
+    .map((a) => ({ a, itens: pendenciasDe(a) }))
+    .filter(({ itens }) => itens.length)
+    .sort((x, y) => y.itens.length - x.itens.length || porNome(x, y));
+
+  // vacinas em dia, mas que vencem nos próximos dias: dá tempo de agendar
+  const emBreve = Store.animais
+    .filter((a) => a.status !== "adotado")
+    .map((a) => ({ a, itens: resumoVacinas(a).breve }))
+    .filter(({ itens }) => itens.length)
+    .sort((x, y) => Math.min(...x.itens.map((i) => i.dias)) - Math.min(...y.itens.map((i) => i.dias)) || porNome(x, y));
+
+  const quando = (d) => (d === 0 ? "hoje" : `em ${d} ${d === 1 ? "dia" : "dias"}`);
 
   $("#app").innerHTML = `
     <h1>Pendências de vacinas</h1>
     <p class="subtitulo-tela">Animais com vacinas faltando ou vencidas (adotados não aparecem).</p>
     <div class="lista-simples">
-      ${lista.map(({ a, pendentes }) => `
-        <a class="linha linha-link" href="#/animal/${a.id}/saude">
-          <div class="mini-foto">${fotoOuPata(a, 30)}</div>
-          <div class="linha-info"><strong>${esc(a.nome)}</strong><span>${esc(nomeCanil(a))}</span>
-            <div class="chips">${pendentes.map((p) => `<span class="pilula vac-${p.status}">${esc(p.vacina.nome)}: ${p.status === "falta" ? "Falta" : "Vencida"}</span>`).join("")}</div>
-          </div>
-        </a>`).join("") || `<div class="vazio"><p>Tudo em dia!</p><p>Nenhum animal com vacina faltando ou vencida.</p></div>`}
-    </div>`;
+      ${pendentes.map(({ a, itens }) => linhaAnimal(a, itens.map((p) => `<span class="pilula vac-${p.status}">${esc(p.vacina.nome)}: ${p.status === "falta" ? "Falta" : "Vencida"}</span>`).join(""))).join("")
+        || `<div class="vazio"><p>Tudo em dia!</p><p>Nenhum animal com vacina faltando ou vencida.</p></div>`}
+    </div>
+    ${emBreve.length ? `
+    <h2 class="secao">Vencem nos próximos ${DIAS_AVISO_VACINA} dias</h2>
+    <p class="subtitulo-tela">Já dá para marcar o reforço com o veterinário.</p>
+    <div class="lista-simples">
+      ${emBreve.map(({ a, itens }) => linhaAnimal(a, itens.sort((x, y) => x.dias - y.dias).map((i) => `<span class="pilula vac-vencida">${esc(i.vacina.nome)}: ${quando(i.dias)}</span>`).join(""))).join("")}
+    </div>` : ""}`;
 }

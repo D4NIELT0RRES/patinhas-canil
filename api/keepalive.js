@@ -4,7 +4,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://mpaieteubzupedxmyvbb.supabase.co";
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_gGOCF8TTQ6tWWGKnlaTvgQ_EadhJmjA";
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/vacinas?select=id&limit=1`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
@@ -13,4 +13,4 @@ module.exports = async (req, res) => {
   } catch (e) {
     res.status(502).json({ ok: false, erro: String(e) });
   }
-};
+}

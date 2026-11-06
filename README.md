@@ -39,7 +39,9 @@ O Patinhas substitui planilhas e cadernos no dia a dia do canil. Com ele a ONG:
 - **Controla vacinas** de cada animal, com situação por cores e cálculo automático da próxima dose;
 - **Organiza os canis e locais** e sabe quantos animais há em cada um;
 - **Lista as pendências**: quem está com vacina faltando ou vencida, para agir rápido;
-- **Encontra qualquer animal** em segundos, por busca livre, filtros e ordenação.
+- **Encontra qualquer animal** em segundos, por busca livre, filtros e ordenação;
+- **Tira dúvidas com uma IA** sobre alimentação, saúde e cuidados, com o contexto do animal;
+- **Automatiza o trabalho chato**: preenche o cadastro pela foto, escreve o texto de adoção e avisa das vacinas antes de vencerem.
 
 ### Telas
 
@@ -52,6 +54,21 @@ O Patinhas substitui planilhas e cadernos no dia a dia do canil. Com ele a ONG:
 | **Vacinas** | Cada vacina é cadastrada **uma única vez**: nome, espécie (cachorro, gato ou ambos) e intervalo do reforço em dias. |
 | **Canis** | Cadastrar, editar e remover locais, com a contagem de animais de cada um. |
 | **Pendências** | Todos os animais com vacina faltando ou vencida. Toque para abrir direto a aba Saúde. |
+
+### Recursos de IA e automação
+
+| Recurso | Onde aparece | O que faz |
+|---|---|---|
+| **Assistente IA** | Botão no topo, em todas as telas | Responde dúvidas gerais: "cachorro pode comer banana?", sinais de alerta, banho, vermifugação. Traz sugestões de perguntas e um guia fixo de **o que pode e o que não pode comer** que funciona mesmo sem IA. |
+| **Assistente na ficha** | Aba **Assistente** de cada animal | Responde já sabendo espécie, idade, porte, doenças, limitações e vacinas do animal. |
+| **Preencher pela foto** | Cadastro do animal | Ao escolher a foto, a IA sugere espécie, porte, raça e cor, e só preenche os campos vazios. |
+| **Texto de adoção** | Ficha do animal | Gera um texto carinhoso para divulgar, editável, com botões **Copiar** e **WhatsApp**. |
+| **Vacinas a vencer** | Lista, ficha e Pendências | Avisa as doses que vencem nos próximos 30 dias, antes de virarem pendência. |
+| **Painel de números** | Topo da lista | Total de animais, disponíveis, em tratamento, com pendências e vacinas a vencer. |
+| **Tempo real** | Listas, Vacinas, Canis e Pendências | Quando outro voluntário muda algo, a tela se atualiza sozinha (Supabase Realtime). |
+| **QR Code** | Ficha do animal | Gera uma etiqueta com QR para imprimir e colar na baia. |
+
+> A IA dá **dicas gerais e pode errar**: o app avisa que ela não substitui o veterinário. Em caso de emergência, procure um profissional.
 
 ---
 
@@ -87,10 +104,15 @@ flowchart LR
     W -->|supabase-js| D[("Supabase<br/>PostgreSQL")]
     W -->|upload / leitura| S[("Supabase Storage<br/>bucket fotos")]
     C["Vercel Cron<br/>(diário)"] -->|/api/keepalive| D
+    W -->|/api/assistente| F["Função Vercel<br/>(chave da IA fica aqui)"]
+    F -->|API| A["Claude (Anthropic)"]
+    F -->|limite de uso| D
+    D -.->|Realtime| W
 ```
 
 - **Sem servidor próprio e sem build:** o app é HTML, CSS e JavaScript puros, servidos como arquivos estáticos.
 - **Sem login:** o app abre direto na lista de animais.
+- **A chave da IA nunca vai para o navegador:** o site chama `/api/assistente`, uma função da Vercel que guarda a `ANTHROPIC_API_KEY`, monta as instruções e fala com o Claude.
 - **Verificação diária:** uma tarefa agendada da Vercel faz uma leitura simples no banco todo dia. Isso evita que o projeto gratuito do Supabase seja **pausado por inatividade**.
 
 ### Modelo de dados
@@ -100,6 +122,9 @@ erDiagram
     CANIS ||--o{ ANIMAIS : abriga
     ANIMAIS ||--o{ VACINAS_APLICADAS : recebe
     VACINAS ||--o{ VACINAS_APLICADAS : registra
+    ASSISTENTE_USO { bigint id PK
+                     text ip_hash
+                     text modo }
 
     CANIS { uuid id PK
             text nome }
@@ -131,6 +156,7 @@ erDiagram
 
 - Excluir um **canil** deixa seus animais "sem canil" (nenhum animal é apagado).
 - Excluir um **animal** ou uma **vacina** apaga também os registros de vacinas ligados a eles.
+- `assistente_uso` só controla o limite de perguntas à IA e guarda um código embaralhado (hash) de quem usou, nunca o IP; registros com mais de 2 dias são limpos.
 - `vacinas_aplicadas` guarda **uma linha por animal e vacina**: a dose mais recente.
 
 ---
@@ -151,7 +177,9 @@ O Patinhas pode ficar como um ícone na tela inicial, abrindo em tela cheia como
 ├── index.html              Página única do aplicativo
 ├── manifest.webmanifest    Instalação como app no celular
 ├── vercel.json             Cabeçalhos de segurança e tarefa diária
+├── package.json            Dependência da função de IA (@anthropic-ai/sdk)
 ├── api/
+│   ├── assistente.js       Função da IA: chat, texto de adoção e análise de foto
 │   └── keepalive.js        Função que mantém o Supabase ativo
 ├── css/styles.css          Visual (tema verde, fontes grandes)
 ├── icons/                  Ícones do aplicativo
@@ -160,6 +188,7 @@ O Patinhas pode ficar como um ícone na tela inicial, abrindo em tela cheia como
 │   ├── utils.js            Datas, ícones, avisos e janelas
 │   ├── api.js              Acesso ao Supabase, fotos e regras de vacinas
 │   ├── animais.js          Lista, formulário e ficha do animal
+│   ├── ia.js               Assistente, guia de alimentos, texto de adoção e foto
 │   ├── outras.js           Vacinas, canis e pendências
 │   └── app.js              Navegação entre telas
 └── supabase/
@@ -172,9 +201,18 @@ O Patinhas pode ficar como um ícone na tela inicial, abrindo em tela cheia como
 
 1. **Supabase:** crie um projeto gratuito em [supabase.com](https://supabase.com).
 2. **Banco e fotos:** em *SQL Editor → New query*, cole todo o `supabase/schema.sql` e clique em **Run**. Isso cria as tabelas, as 6 vacinas de exemplo (V10, Antirrábica, Gripe canina, Giárdia, Leishmaniose e V4/V5 felina), as políticas de acesso e o bucket público `fotos`.
-3. **Chaves:** em *Project Settings → API Keys*, copie a **Project URL** e a chave **publishable**, e cole em `js/config.js` (e, se quiser, em `api/keepalive.js`).
+3. **Chaves:** em *Project Settings → API Keys*, copie a **Project URL** e a chave **publishable**, e cole em `js/config.js` (as funções em `api/` usam as variáveis `SUPABASE_URL` e `SUPABASE_ANON_KEY`, se definidas).
 4. **Vercel:** importe este repositório em [vercel.com/new](https://vercel.com/new). Não precisa de configuração: o projeto é estático.
-5. Abra o endereço gerado e cadastre o primeiro canil.
+5. **IA (opcional):** crie uma chave em [console.anthropic.com](https://console.anthropic.com), defina um **limite de gasto mensal** lá e cadastre as variáveis abaixo na Vercel (*Project Settings → Environment Variables*). Depois faça um novo deploy.
+6. Abra o endereço gerado e cadastre o primeiro canil.
+
+| Variável | Obrigatória | Para que serve |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Sim, para a IA | Chave da API do Claude. Sem ela o app funciona normalmente e o assistente avisa que não está configurado. |
+| `ANTHROPIC_MODEL` | Não | Modelo usado. Padrão: `claude-opus-5-5`. Use `claude-haiku-5-5` para gastar bem menos. |
+| `LIMITE_HORA_POR_PESSOA` | Não | Perguntas por hora por pessoa (padrão 20). |
+| `LIMITE_POR_DIA` | Não | Perguntas por dia no total (padrão 400). |
+| `IP_SALT` | Não | Texto qualquer que embaralha o identificador de quem usa a IA. |
 
 Para testar no computador, basta rodar `python3 -m http.server 8000` na pasta e abrir http://localhost:8000.
 
@@ -187,6 +225,8 @@ O app **não tem login**, por decisão do projeto. Por isso as políticas de ace
 - **quem tiver o endereço do site consegue ver e alterar os dados e as fotos**;
 - compartilhe o link **apenas com voluntários de confiança** e evite divulgá-lo em redes sociais;
 - o bucket de fotos aceita só imagens (JPEG, PNG e WebP) de até 5 MB;
+- o assistente de IA é protegido por limites por pessoa e por dia, mas, como não há login, **qualquer pessoa com o link pode usá-lo e gerar custo**: defina um limite de gasto na Anthropic e prefira `claude-haiku-5-5` se quiser economizar;
+- a chave da IA fica só no servidor da Vercel, nunca no código do site;
 - não coloque no cadastro dados pessoais de adotantes.
 
 Se a ONG quiser proteger o acesso no futuro, o caminho é adicionar login (Supabase Auth) e trocar as políticas `acesso_anonimo` por políticas que exijam usuário autenticado.
@@ -199,6 +239,7 @@ Se a ONG quiser proteger o acesso no futuro, o caminho é adicionar login (Supab
 |---|---|---|
 | Banco de dados | 500 MB | Texto puro: cabem dezenas de milhares de animais |
 | Armazenamento de fotos | 1 GB | Cada foto é reduzida (≈ 100–300 KB): milhares de fotos |
+| Funções da Vercel | Plano gratuito (Hobby) | Uma chamada por pergunta à IA, limitada a 30 s |
 | Pausa por inatividade | ~7 dias sem uso | Evitada pela tarefa diária `/api/keepalive` |
 
 > Mesmo assim, **faça uma cópia de segurança de vez em quando**: no Supabase, *Table Editor → Export* exporta cada tabela em CSV. O plano gratuito não inclui backups automáticos.
@@ -209,6 +250,8 @@ Se a ONG quiser proteger o acesso no futuro, o caminho é adicionar login (Supab
 
 - **Front-end:** HTML, CSS e JavaScript puros (sem framework e sem build)
 - **Banco e arquivos:** [Supabase](https://supabase.com) (PostgreSQL + Storage) via `supabase-js`
+- **IA:** [Claude](https://www.anthropic.com/claude) via `@anthropic-ai/sdk`, em função da Vercel
+- **Tempo real:** Supabase Realtime
 - **Hospedagem:** [Vercel](https://vercel.com) (site estático + função + tarefa agendada)
 - **Fontes:** Fredoka e Nunito (Google Fonts)
 

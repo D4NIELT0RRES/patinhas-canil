@@ -90,6 +90,23 @@ const opcoesSelect = (itens, atual, vazio) =>
   `<option value="">${vazio}</option>` +
   itens.map(([v, r]) => `<option value="${esc(v)}" ${v === atual ? "selected" : ""}>${esc(r)}</option>`).join("");
 
+// Números do topo da lista: visão rápida da situação do canil
+function painelNumeros() {
+  if (!Store.animais.length) return "";
+  const noCanil = Store.animais.filter((a) => a.status !== "adotado");
+  const comPendencia = noCanil.filter((a) => pendenciasDe(a).length).length;
+  const aVencer = noCanil.reduce((n, a) => n + resumoVacinas(a).breve.length, 0);
+  const conta = (st) => Store.animais.filter((a) => a.status === st).length;
+  const itens = [
+    ["Animais", Store.animais.length, "", ""],
+    ["Disponíveis", conta("disponivel"), "", ""],
+    ["Em tratamento", conta("tratamento"), "", ""],
+    ["Com pendências", comPendencia, "#/pendencias", comPendencia ? "numero-alerta" : ""],
+    ["Vacinas a vencer", aVencer, "#/pendencias", aVencer ? "numero-atencao" : ""],
+  ];
+  return `<div class="numeros">${itens.map(([r, n, href, c]) => `<${href ? `a href="${href}"` : "div"} class="numero ${c}"><strong>${n}</strong><span>${r}</span></${href ? "a" : "div"}>`).join("")}</div>`;
+}
+
 async function viewLista() {
   const cores = [...new Set(Store.animais.map((a) => (a.cor || "").trim()).filter(Boolean))].sort((x, y) => x.localeCompare(y, "pt-BR"));
   const canisOp = [["_sem", "Sem canil"], ...Store.canis.map((c) => [c.id, c.nome])];
@@ -99,6 +116,7 @@ async function viewLista() {
   $("#app").innerHTML = `
     <h1>Nossos animais</h1>
     <p id="contagem" class="subtitulo-tela"></p>
+    ${painelNumeros()}
     <div class="busca-wrap">${ico("search", 24)}
       <input id="busca" class="busca" type="search" placeholder="Buscar nome, raça, canil..." value="${esc(filtros.busca)}" autocomplete="off" aria-label="Buscar animais">
     </div>
@@ -187,7 +205,8 @@ async function viewForm(id) {
           ${v.foto_url ? `<img src="${esc(v.foto_url)}" alt="Foto atual">` : `${ico("camera", 44)}<span>Tirar foto ou escolher da galeria</span>`}
         </label>
         <input class="oculto" type="file" id="foto" accept="image/*">
-        <p class="ajuda">No celular, o aparelho pergunta se você quer abrir a câmera ou a galeria.</p>
+        <button type="button" class="btn btn-suave btn-ia-foto" id="ia-foto" hidden>${ico("sparkles")} Preencher com IA pela foto</button>
+        <p class="ajuda" id="ajuda-foto">No celular, o aparelho pergunta se você quer abrir a câmera ou a galeria.</p>
       </div>
       ${campo("Nome *", "Como o animal é chamado. Ex.: Mel", `<input id="nome" name="nome" value="${esc(v.nome)}" placeholder="Ex.: Pipoca" required maxlength="80" autocomplete="off">`, "nome")}
       ${campo("Espécie *", "Escolha cachorro ou gato.", grupo("especie", [["cachorro", "Cachorro"], ["gato", "Gato"]], v.especie))}
@@ -215,6 +234,30 @@ async function viewForm(id) {
     if (!f) return;
     arquivoFoto = f;
     $("#previa").innerHTML = `<img src="${URL.createObjectURL(f)}" alt="Foto escolhida">`;
+    $("#ia-foto").hidden = false;
+    $("#ajuda-foto").textContent = "A IA pode sugerir espécie, raça, cor e porte pela foto. Você confere antes de salvar.";
+  };
+
+  // A IA olha a foto e sugere os campos que ainda estão vazios
+  $("#ia-foto").onclick = async (e) => {
+    const botao = e.currentTarget;
+    botao.disabled = true;
+    botao.textContent = "Analisando a foto...";
+    try {
+      const sug = await sugerirPelaFoto(arquivoFoto);
+      const f = $("#form");
+      const preenchidos = [];
+      if (sug.especie && !f.elements.especie.value) (f.querySelector(`#especie_${sug.especie}`).checked = true), preenchidos.push("espécie");
+      if (sug.porte && !f.elements.porte.value) (f.querySelector(`#porte_${sug.porte}`).checked = true), preenchidos.push("porte");
+      if (sug.raca && !f.elements.raca.value.trim()) (f.elements.raca.value = sug.raca), preenchidos.push("raça");
+      if (sug.cor && !f.elements.cor.value.trim()) (f.elements.cor.value = sug.cor), preenchidos.push("cor");
+      aviso(preenchidos.length ? `A IA sugeriu: ${preenchidos.join(", ")}. Confira antes de salvar.` : "A IA não achou nada novo para preencher.");
+    } catch (err) {
+      console.error(err);
+      aviso(mensagemErroIA(err), "erro");
+    }
+    botao.disabled = false;
+    botao.innerHTML = `${ico("sparkles")} Preencher com IA pela foto`;
   };
 
   $("#form").onsubmit = async (e) => {
@@ -296,10 +339,10 @@ function fichaDados(a) {
 
 function fichaSaude(a) {
   const r = resumoVacinas(a);
-  const linhas = r.itens.map(({ vacina, status, aplicada, proxima }) => {
+  const linhas = r.itens.map(({ vacina, status, aplicada, proxima, dias }) => {
     const detalhe = status === "falta" ? "Ainda não tomou"
       : status === "vencida" ? `Tomou em ${fmtData(aplicada)} · Venceu em <b>${fmtData(proxima)}</b>`
-      : `Tomou em ${fmtData(aplicada)} · Próxima: <b>${fmtData(proxima)}</b>`;
+      : `Tomou em ${fmtData(aplicada)} · Próxima: <b>${fmtData(proxima)}</b>${dias <= DIAS_AVISO_VACINA ? ` · <b class="breve">${dias === 0 ? "vence hoje" : `vence em ${dias} ${dias === 1 ? "dia" : "dias"}`}</b>` : ""}`;
     return `<div class="vac vac-${status}">
       <label class="check"><input type="checkbox" data-vac="${vacina.id}" ${status !== "falta" ? "checked" : ""} aria-label="Vacina ${esc(vacina.nome)} aplicada"><span>${ico("check", 28)}</span></label>
       <div class="vac-info"><div><strong>${esc(vacina.nome)}</strong> <span class="pilula vac-${status}">${ROTULOS.vacina[status]}</span></div><small>${detalhe}</small></div>
@@ -355,6 +398,7 @@ async function viewFicha(id, aba) {
   const a = Store.animais.find((x) => x.id === id);
   if (!a) return naoEncontrado("Animal não encontrado. Ele pode ter sido excluído.");
   let abaAtual = aba === "saude" ? "saude" : "dados";
+  const chatEstado = { msgs: [], pensando: false }; // a conversa não se perde ao trocar de aba
   const pend = pendenciasDe(a).length;
 
   $("#app").innerHTML = `
@@ -372,11 +416,16 @@ async function viewFicha(id, aba) {
           <a class="btn btn-suave" href="#/animal/${a.id}/editar">${ico("pencil")} Editar</a>
           <button class="btn btn-contorno-perigo" id="excluir">${ico("trash")} Excluir</button>
         </div>
+        <div class="acoes acoes-extra">
+          <button class="btn btn-contorno" id="adocao">${ico("sparkles")} Texto de adoção</button>
+          <button class="btn btn-contorno" id="qr">${ico("qr")} QR Code</button>
+        </div>
       </div>
     </section>
     <div class="abas" role="tablist">
       <button role="tab" data-aba="dados">Dados</button>
       <button role="tab" data-aba="saude">Saúde ${pend ? `<span class="contador">${pend}</span>` : ""}</button>
+      <button role="tab" data-aba="ia">${ico("sparkles", 18)} Assistente</button>
     </div>
     <div id="conteudo"></div>`;
 
@@ -385,7 +434,12 @@ async function viewFicha(id, aba) {
       b.classList.toggle("ativa", b.dataset.aba === abaAtual);
       b.setAttribute("aria-selected", String(b.dataset.aba === abaAtual));
     }
-    $("#conteudo").innerHTML = abaAtual === "saude" ? fichaSaude(a) : fichaDados(a);
+    if (abaAtual === "ia") {
+      $("#conteudo").innerHTML = `<div id="chat-ficha"></div>`;
+      montarChat($("#chat-ficha"), { animal: a, estado: chatEstado });
+    } else {
+      $("#conteudo").innerHTML = abaAtual === "saude" ? fichaSaude(a) : fichaDados(a);
+    }
   };
   for (const b of document.querySelectorAll(".abas button")) b.onclick = () => ((abaAtual = b.dataset.aba), mostrar());
 
@@ -412,6 +466,9 @@ async function viewFicha(id, aba) {
     aplicar(() => (marcou ? registrarDose(a, cb.dataset.vac) : desfazerDose(a, cb.dataset.vac)));
   };
 
+  $("#adocao").onclick = () => abrirTextoAdocao(a);
+  $("#qr").onclick = () => abrirQR(a);
+
   $("#excluir").onclick = async () => {
     const sim = await confirmar({
       titulo: `Excluir ${a.nome}?`,
@@ -431,4 +488,44 @@ async function viewFicha(id, aba) {
     }
   };
   mostrar();
+}
+
+// ---------- QR Code do animal (para a plaquinha do canil) ----------
+
+const QR_SRC = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
+
+const carregarScript = (src) =>
+  new Promise((ok, falha) => {
+    const el = document.createElement("script");
+    el.src = src;
+    el.onload = ok;
+    el.onerror = () => falha(new Error("Não foi possível carregar o gerador de QR Code."));
+    document.head.appendChild(el);
+  });
+
+async function abrirQR(a) {
+  const { el, fechar } = abrirModal(`<h2>QR Code de ${esc(a.nome)}</h2><div class="carregando"><div class="roda"></div></div>`, null, "modal-qr");
+  try {
+    if (!window.qrcode) await carregarScript(QR_SRC);
+    const link = `${location.origin}${location.pathname}#/animal/${a.id}`;
+    const qr = window.qrcode(0, "M");
+    qr.addData(link);
+    qr.make();
+    el.innerHTML = `
+      <div class="qr-imprimir">
+        <h2>${esc(a.nome)}</h2>
+        <div class="qr-svg">${qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true, alt: `QR Code da ficha de ${a.nome}` })}</div>
+        <p>Aponte a câmera do celular para abrir a ficha.</p>
+      </div>
+      <div class="modal-botoes">
+        <button class="btn btn-contorno" data-fechar>Fechar</button>
+        <button class="btn" data-imprimir>${ico("print")} Imprimir</button>
+      </div>`;
+    $("[data-fechar]", el).onclick = fechar;
+    $("[data-imprimir]", el).onclick = () => window.print();
+  } catch (e) {
+    console.error(e);
+    el.innerHTML = `<h2>QR Code</h2><p class="erro">${esc(e.message)}</p><div class="modal-botoes"><button class="btn btn-contorno" data-fechar>Fechar</button></div>`;
+    $("[data-fechar]", el).onclick = fechar;
+  }
 }

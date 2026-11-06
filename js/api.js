@@ -69,6 +69,8 @@ async function removerFoto(caminho) {
 
 // ---------- Vacinas ----------
 
+const DIAS_AVISO_VACINA = 30;
+
 const vacinasDoAnimal = (a) => Store.vacinas.filter((v) => v.especie === "ambos" || v.especie === a.especie);
 
 // Situação de cada vacina que se aplica ao animal: em dia, vencida ou falta.
@@ -76,14 +78,19 @@ function situacaoVacinas(a) {
   const hoje = hojeISO();
   return vacinasDoAnimal(a).map((vacina) => {
     const ap = Store.aplicadaPorChave[`${a.id}|${vacina.id}`];
-    if (!ap) return { vacina, status: "falta", aplicada: null, proxima: null };
+    if (!ap) return { vacina, status: "falta", aplicada: null, proxima: null, dias: null };
     const proxima = addDias(ap.data_aplicacao, vacina.intervalo_dias);
-    return { vacina, status: proxima < hoje ? "vencida" : "ok", aplicada: ap.data_aplicacao, proxima };
+    // dias até a próxima dose (negativo quando já venceu)
+    return { vacina, status: proxima < hoje ? "vencida" : "ok", aplicada: ap.data_aplicacao, proxima, dias: diasEntre(hoje, proxima) };
   });
 }
 
 function resumoVacinas(a) {
   const itens = situacaoVacinas(a);
   const conta = (s) => itens.filter((i) => i.status === s).length;
-  return { itens, ok: conta("ok"), vencidas: conta("vencida"), faltando: conta("falta"), pendentes: itens.filter((i) => i.status !== "ok") };
+  return {
+    itens, ok: conta("ok"), vencidas: conta("vencida"), faltando: conta("falta"),
+    pendentes: itens.filter((i) => i.status !== "ok"),
+    breve: itens.filter((i) => i.status === "ok" && i.dias <= DIAS_AVISO_VACINA), // em dia, mas vencem logo
+  };
 }

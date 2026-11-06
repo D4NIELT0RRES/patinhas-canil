@@ -110,3 +110,39 @@ create policy "fotos_alteracao" on storage.objects for update to anon, authentic
   using (bucket_id = 'fotos') with check (bucket_id = 'fotos');
 create policy "fotos_exclusao"  on storage.objects for delete to anon, authenticated
   using (bucket_id = 'fotos');
+
+-- =====================================================================
+-- Versão 1.1: assistente de IA e atualização em tempo real
+-- =====================================================================
+
+-- Controle de uso do assistente (limita abusos e gastos com a IA).
+-- Guarda só um código embaralhado (hash) de quem usou, nunca o IP.
+create table if not exists public.assistente_uso (
+  id         bigint generated always as identity primary key,
+  ip_hash    text not null,
+  modo       text not null default 'chat' check (modo in ('chat', 'adocao', 'foto')),
+  created_at timestamptz not null default now()
+);
+create index if not exists assistente_uso_pessoa_idx on public.assistente_uso (ip_hash, created_at desc);
+create index if not exists assistente_uso_data_idx   on public.assistente_uso (created_at desc);
+
+alter table public.assistente_uso enable row level security;
+drop policy if exists "uso_leitura"  on public.assistente_uso;
+drop policy if exists "uso_registro" on public.assistente_uso;
+drop policy if exists "uso_limpeza"  on public.assistente_uso;
+create policy "uso_leitura"  on public.assistente_uso for select to anon, authenticated using (true);
+create policy "uso_registro" on public.assistente_uso for insert to anon, authenticated with check (modo in ('chat', 'adocao', 'foto'));
+-- só permite apagar registros com mais de 2 dias (limpeza automática)
+create policy "uso_limpeza"  on public.assistente_uso for delete to anon, authenticated using (created_at < now() - interval '2 days');
+
+-- Tempo real: as telas atualizam sozinhas quando outro voluntário altera algo.
+do $$
+declare t text;
+begin
+  foreach t in array array['animais', 'canis', 'vacinas', 'vacinas_aplicadas'] loop
+    begin
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    exception when duplicate_object then null;
+    end;
+  end loop;
+end $$;

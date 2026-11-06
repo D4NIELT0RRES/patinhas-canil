@@ -38,6 +38,12 @@ const ICONES = {
   voltar: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
   nota: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
+  sparkles: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/>',
+  qr: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  print: '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+  chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
 };
 const ico = (nome, tam = 20) =>
   `<svg class="ico" width="${tam}" height="${tam}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONES[nome]}</svg>`;
@@ -51,6 +57,8 @@ const parseISO = (s) => {
   const [a, m, d] = s.split("-").map(Number);
   return new Date(a, m - 1, d);
 };
+// dias de a até b (positivo quando b é depois de a)
+const diasEntre = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 86400000);
 const addDias = (iso, n) => {
   const d = parseISO(iso);
   d.setDate(d.getDate() + n);
@@ -97,10 +105,10 @@ function aviso(texto, tipo = "ok") {
 
 // ---------- Janelas ----------
 
-function abrirModal(html, aoFechar) {
+function abrirModal(html, aoFechar, classe = "") {
   const fundo = document.createElement("div");
   fundo.className = "modal-fundo";
-  fundo.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
+  fundo.innerHTML = `<div class="modal ${classe}" role="dialog" aria-modal="true">${html}</div>`;
   document.body.appendChild(fundo);
   document.body.classList.add("sem-rolagem");
   const fechar = () => {
