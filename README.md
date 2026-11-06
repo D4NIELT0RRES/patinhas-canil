@@ -64,6 +64,7 @@ O Patinhas substitui planilhas e cadernos no dia a dia do canil. Com ele a ONG:
 | **Preencher pela foto** | Cadastro do animal | Ao escolher a foto, a IA sugere espécie, porte, raça e cor, e só preenche os campos vazios. |
 | **Texto de adoção** | Ficha do animal | Gera um texto carinhoso para divulgar, editável, com botões **Copiar** e **WhatsApp**. |
 | **Galeria** | Aba **Galeria** | Carrossel de fotos dos animais que passa sozinho (e se pode arrastar), com miniaturas e filtros (todos, para adoção, cachorros, gatos). Tocar na foto abre um cartão com os dados, as vacinas e as observações, com setas para o próximo animal. |
+| **Vacinação em grupo** | Pendências → botão no topo | Para o dia em que o veterinário vacina vários animais: escolha a vacina, a data e o canil, e marque quem tomou. Já vem marcado quem está com a vacina faltando ou vencida. Registra tudo de uma vez, com confirmação. |
 | **Vacinas a vencer** | Lista, ficha e Pendências | Avisa as doses que vencem nos próximos 30 dias, antes de virarem pendência. |
 | **Painel de números** | Topo da lista | Total de animais, disponíveis, em tratamento, com pendências e vacinas a vencer. |
 | **Tempo real** | Listas, Vacinas, Canis e Pendências | Quando outro voluntário muda algo, a tela se atualiza sozinha (Supabase Realtime). |

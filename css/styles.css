@@ -342,3 +342,14 @@ a.numero:hover { background: var(--secundaria); }
 @keyframes sobe { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .slide, .cartao-corpo { transition: none; animation: none; } .trilho { scroll-behavior: auto; } }
 @media (max-width: 720px) { .seta { width: 44px; height: 44px; } nav a { font-size: .7rem; } }
+
+/* ---------- Vacinação em grupo ---------- */
+.btn-bloco { width: 100%; margin-bottom: 1rem; }
+.barra-marcar { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.barra-marcar .btn { min-height: 48px; padding: .4rem 1.1rem; font-size: .9rem; }
+.linha-marcar { cursor: pointer; }
+.linha-marcar:has(input:checked) { background: var(--ok-fundo); outline: 2px solid var(--ok); }
+.linha-marcar input { width: 26px; height: 26px; flex: none; accent-color: var(--primaria); }
+.barra-fixa { position: sticky; bottom: calc(var(--altura-nav) + .8rem); margin-top: 1.2rem; z-index: 5; }
+.barra-fixa .btn { width: 100%; box-shadow: 0 4px 14px oklch(30% .05 160 / .3); }
+.barra-fixa .btn:disabled { background: var(--campo); border-color: var(--campo); color: var(--suave); box-shadow: none; cursor: not-allowed; }

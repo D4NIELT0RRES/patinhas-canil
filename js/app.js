@@ -9,6 +9,7 @@ const ROTAS = [
   [/^#\/galeria$/, () => viewGaleria(), "galeria", true],
   [/^#\/vacinas$/, () => viewVacinas(), "vacinas", true],
   [/^#\/canis$/, () => viewCanis(), "canis", true],
+  [/^#\/vacinacao$/, () => viewVacinacao(), "pendencias"],
   [/^#\/pendencias$/, () => viewPendencias(), "pendencias", true],
 ];
 

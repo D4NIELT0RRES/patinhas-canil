@@ -177,6 +177,7 @@ async function viewPendencias() {
   $("#app").innerHTML = `
     <h1>Pendências de vacinas</h1>
     <p class="subtitulo-tela">Animais com vacinas faltando ou vencidas (adotados não aparecem).</p>
+    ${Store.animais.length && Store.vacinas.length ? `<a class="btn btn-suave btn-bloco" href="#/vacinacao">${ico("syringe")} Registrar vacinação em grupo</a>` : ""}
     <div class="lista-simples">
       ${pendentes.map(({ a, itens }) => linhaAnimal(a, itens.map((p) => `<span class="pilula vac-${p.status}">${esc(p.vacina.nome)}: ${p.status === "falta" ? "Falta" : "Vencida"}</span>`).join(""))).join("")
         || `<div class="vazio"><p>Tudo em dia!</p><p>Nenhum animal com vacina faltando ou vencida.</p></div>`}
@@ -187,4 +188,89 @@ async function viewPendencias() {
     <div class="lista-simples">
       ${emBreve.map(({ a, itens }) => linhaAnimal(a, itens.sort((x, y) => x.dias - y.dias).map((i) => `<span class="pilula vac-vencida">${esc(i.vacina.nome)}: ${quando(i.dias)}</span>`).join(""))).join("")}
     </div>` : ""}`;
+}
+
+// Dia de vacinação: registra a mesma vacina e data para vários animais de uma vez.
+async function viewVacinacao() {
+  if (!Store.vacinas.length) return naoEncontrado("Cadastre uma vacina primeiro, na aba Vacinas.");
+  const est = { vacina: Store.vacinas[0].id, canil: "", data: hojeISO(), marcados: new Set() };
+
+  const elegiveis = () => {
+    const v = Store.vacinas.find((x) => x.id === est.vacina);
+    return Store.animais
+      .filter((a) => a.status !== "adotado" && (v.especie === "ambos" || v.especie === a.especie))
+      .filter((a) => !est.canil || (est.canil === "_sem" ? !a.canil_id : a.canil_id === est.canil))
+      .map((a) => ({ a, sit: situacaoVacinas(a).find((i) => i.vacina.id === v.id) }))
+      .sort((x, y) => (x.sit.status === "ok") - (y.sit.status === "ok") || x.a.nome.localeCompare(y.a.nome, "pt-BR"));
+  };
+  const rotuloSit = (sit) =>
+    sit.status === "ok" ? `<span class="pilula vac-ok">Em dia</span>`
+    : sit.status === "vencida" ? `<span class="pilula vac-vencida">Vencida</span>`
+    : `<span class="pilula vac-falta">Falta</span>`;
+
+  $("#app").innerHTML = `
+    <a class="voltar" href="#/pendencias">${ico("voltar", 20)} Voltar</a>
+    <h1>Vacinação em grupo</h1>
+    <p class="subtitulo-tela">Use no dia em que o veterinário vacina vários animais: escolha a vacina, a data e quem tomou.</p>
+    <div class="campo"><label for="v_vacina">Vacina</label>
+      <select id="v_vacina">${Store.vacinas.map((v) => `<option value="${v.id}">${esc(v.nome)}</option>`).join("")}</select></div>
+    <div class="campo"><label for="v_data">Data da vacina</label>
+      <input id="v_data" type="date" value="${est.data}" max="${hojeISO()}"></div>
+    <div class="campo"><label for="v_canil">Canil</label>
+      <select id="v_canil"><option value="">Todos os canis</option><option value="_sem">Sem canil</option>${Store.canis.map((c) => `<option value="${c.id}">${esc(c.nome)}</option>`).join("")}</select></div>
+    <div class="barra-marcar"><button class="btn btn-contorno" id="v_pend">Marcar quem precisa</button><button class="btn btn-contorno" id="v_todos">Marcar todos</button><button class="btn btn-contorno" id="v_nenhum">Limpar</button></div>
+    <div class="lista-simples" id="v_lista"></div>
+    <div class="barra-fixa"><button class="btn" id="v_salvar">Registrar</button></div>`;
+
+  const desenhar = () => {
+    const itens = elegiveis();
+    est.marcados = new Set([...est.marcados].filter((id) => itens.some(({ a }) => a.id === id)));
+    $("#v_lista").innerHTML = itens.length
+      ? itens.map(({ a, sit }) => `<label class="linha linha-marcar">
+          <input type="checkbox" value="${a.id}" ${est.marcados.has(a.id) ? "checked" : ""}>
+          <div class="mini-foto">${fotoOuPata(a, 30)}</div>
+          <div class="linha-info"><strong>${esc(a.nome)}</strong><span>${esc(nomeCanil(a))}</span></div>${rotuloSit(sit)}
+        </label>`).join("")
+      : `<div class="vazio"><p>Nenhum animal para esta vacina${est.canil ? " neste canil" : ""}.</p></div>`;
+    atualizarBotao();
+  };
+  const atualizarBotao = () => {
+    const n = est.marcados.size;
+    const b = $("#v_salvar");
+    b.disabled = !n;
+    b.textContent = n ? `Registrar em ${n} ${n === 1 ? "animal" : "animais"}` : "Marque os animais";
+  };
+  const marcar = (filtro) => {
+    est.marcados = new Set(elegiveis().filter(filtro).map(({ a }) => a.id));
+    desenhar();
+  };
+
+  $("#v_vacina").onchange = (e) => { est.vacina = e.target.value; est.marcados.clear(); marcar(({ sit }) => sit.status !== "ok"); };
+  $("#v_canil").onchange = (e) => { est.canil = e.target.value; desenhar(); };
+  $("#v_data").onchange = (e) => (est.data = e.target.value);
+  $("#v_pend").onclick = () => marcar(({ sit }) => sit.status !== "ok");
+  $("#v_todos").onclick = () => marcar(() => true);
+  $("#v_nenhum").onclick = () => { est.marcados.clear(); desenhar(); };
+  $("#v_lista").onchange = (e) => {
+    if (e.target.checked) est.marcados.add(e.target.value); else est.marcados.delete(e.target.value);
+    atualizarBotao();
+  };
+  $("#v_salvar").onclick = async () => {
+    if (!est.data || est.data > hojeISO()) return aviso("Escolha uma data de hoje ou anterior.", "erro");
+    const v = Store.vacinas.find((x) => x.id === est.vacina);
+    const nomes = elegiveis().filter(({ a }) => est.marcados.has(a.id)).map(({ a }) => a.nome);
+    const sim = await confirmar({
+      titulo: "Registrar vacinação?",
+      texto: `${v.nome} em ${fmtData(est.data)}: ${nomes.join(", ")}.`,
+      botao: "Registrar",
+    });
+    if (!sim) return;
+    const linhas = [...est.marcados].map((id) => ({ animal_id: id, vacina_id: est.vacina, data_aplicacao: est.data }));
+    if (await tentar(() => q(sb.from("vacinas_aplicadas").upsert(linhas, { onConflict: "animal_id,vacina_id" })))) {
+      aviso(`Vacina registrada em ${linhas.length} ${linhas.length === 1 ? "animal" : "animais"}! ✅`);
+      await carregarTudo();
+      location.hash = "#/pendencias";
+    }
+  };
+  marcar(({ sit }) => sit.status !== "ok");
 }
