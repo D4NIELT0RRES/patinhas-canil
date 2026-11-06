@@ -63,6 +63,7 @@ O Patinhas substitui planilhas e cadernos no dia a dia do canil. Com ele a ONG:
 | **Assistente na ficha** | Aba **Assistente** de cada animal | Responde já sabendo espécie, idade, porte, doenças, limitações e vacinas do animal. |
 | **Preencher pela foto** | Cadastro do animal | Ao escolher a foto, a IA sugere espécie, porte, raça e cor, e só preenche os campos vazios. |
 | **Texto de adoção** | Ficha do animal | Gera um texto carinhoso para divulgar, editável, com botões **Copiar** e **WhatsApp**. |
+| **Galeria** | Aba **Galeria** | Carrossel de fotos dos animais que passa sozinho (e se pode arrastar), com miniaturas e filtros (todos, para adoção, cachorros, gatos). Tocar na foto abre um cartão com os dados, as vacinas e as observações, com setas para o próximo animal. |
 | **Vacinas a vencer** | Lista, ficha e Pendências | Avisa as doses que vencem nos próximos 30 dias, antes de virarem pendência. |
 | **Painel de números** | Topo da lista | Total de animais, disponíveis, em tratamento, com pendências e vacinas a vencer. |
 | **Tempo real** | Listas, Vacinas, Canis e Pendências | Quando outro voluntário muda algo, a tela se atualiza sozinha (Supabase Realtime). |
@@ -188,6 +189,7 @@ O Patinhas pode ficar como um ícone na tela inicial, abrindo em tela cheia como
 │   ├── utils.js            Datas, ícones, avisos e janelas
 │   ├── api.js              Acesso ao Supabase, fotos e regras de vacinas
 │   ├── animais.js          Lista, formulário e ficha do animal
+│   ├── galeria.js          Carrossel de fotos e cartão do animal
 │   ├── ia.js               Assistente, guia de alimentos, texto de adoção e foto
 │   ├── outras.js           Vacinas, canis e pendências
 │   └── app.js              Navegação entre telas

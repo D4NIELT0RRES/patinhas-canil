@@ -6,6 +6,7 @@ const ROTAS = [
   [/^#\/animal\/novo$/, () => viewForm(null), "animais"],
   [/^#\/animal\/([^/]+)\/editar$/, (id) => viewForm(id), "animais"],
   [/^#\/animal\/([^/]+)(?:\/(saude))?$/, (id, aba) => viewFicha(id, aba), "animais"],
+  [/^#\/galeria$/, () => viewGaleria(), "galeria", true],
   [/^#\/vacinas$/, () => viewVacinas(), "vacinas", true],
   [/^#\/canis$/, () => viewCanis(), "canis", true],
   [/^#\/pendencias$/, () => viewPendencias(), "pendencias", true],
