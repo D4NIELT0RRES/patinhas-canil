@@ -28,9 +28,11 @@ async function recarregar(view) {
 }
 
 function telaConfiguracao() {
-  $("#app").innerHTML = `<div class="vazio"><p>⚙️ O app ainda não está ligado ao Supabase.</p>
+  $("#app").innerHTML = `<div class="vazio"><p>O app ainda não está ligado ao Supabase.</p>
     <p>Abra o arquivo <strong>js/config.js</strong> e cole a URL e a chave do seu projeto. O passo a passo está no <strong>README.md</strong>.</p></div>`;
 }
+
+const TITULOS = { animais: "Animais", galeria: "Galeria", vacinas: "Vacinas", canis: "Canis", pendencias: "Pendências" };
 
 let numeroRender = 0;
 let telaAtual = null;
@@ -47,7 +49,8 @@ async function rotear() {
 
   const meu = ++numeroRender;
   telaAtual = null; // enquanto carrega, nada de atualização ao vivo
-  $("#app").innerHTML = `<div class="carregando"><div class="roda"></div><p>Carregando...</p></div>`;
+  document.title = `${TITULOS[menu]} · Patinhas`;
+  $("#app").innerHTML = `<div class="esq-titulo"></div><div class="esq-linha"></div><div class="grade">${'<div class="esq-card"></div>'.repeat(6)}</div>`;
   try {
     await carregarTudo();
     if (meu !== numeroRender) return; // o usuário já foi para outra tela
@@ -91,6 +94,12 @@ function ouvirMudancas() {
 }
 
 $("#abrir-ia").onclick = abrirAssistente;
+// atalho: "/" leva direto para a busca da lista de animais
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "/" || e.ctrlKey || e.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) || $(".modal-fundo")) return;
+  const busca = $("#busca");
+  if (busca) { e.preventDefault(); busca.focus(); }
+});
 for (const el of document.querySelectorAll("[data-ico]")) el.outerHTML = ico(el.dataset.ico, +el.dataset.tam || 22);
 window.addEventListener("hashchange", rotear);
 rotear();

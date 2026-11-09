@@ -51,7 +51,7 @@ async function viewVacinas() {
     const d = dadosDe(r);
     if (!validos(d)) return aviso("Confira o nome e o número de dias.", "erro");
     if (await tentar(() => q(sb.from("vacinas").insert(d)), "Não foi possível salvar. Talvez essa vacina já exista.")) {
-      aviso("Vacina salva! ✅");
+      aviso("Vacina salva!");
       await recarregar(viewVacinas);
     }
   };
@@ -65,7 +65,7 @@ async function viewVacinas() {
       const d = dadosDe(r);
       if (!validos(d)) return aviso("Confira o nome e o número de dias.", "erro");
       if (await tentar(() => q(sb.from("vacinas").update(d).eq("id", v.id)), "Não foi possível salvar. Talvez essa vacina já exista.")) {
-        aviso("Vacina salva! ✅");
+        aviso("Vacina salva!");
         await recarregar(viewVacinas);
       }
     } else if (rm) {
@@ -113,7 +113,7 @@ async function viewCanis() {
     const nome = $("#nome-canil").value.trim();
     if (!nome) return aviso("Escreva o nome do canil.", "erro");
     if (await tentar(() => q(sb.from("canis").insert({ nome })))) {
-      aviso("Canil salvo! ✅");
+      aviso("Canil salvo!");
       await recarregar(viewCanis);
     }
   };
@@ -128,7 +128,7 @@ async function viewCanis() {
       });
       if (!r?.nome.trim()) return;
       if (await tentar(() => q(sb.from("canis").update({ nome: r.nome.trim() }).eq("id", c.id)))) {
-        aviso("Canil salvo! ✅");
+        aviso("Canil salvo!");
         await recarregar(viewCanis);
       }
     } else if (rm) {
@@ -267,7 +267,7 @@ async function viewVacinacao() {
     if (!sim) return;
     const linhas = [...est.marcados].map((id) => ({ animal_id: id, vacina_id: est.vacina, data_aplicacao: est.data }));
     if (await tentar(() => q(sb.from("vacinas_aplicadas").upsert(linhas, { onConflict: "animal_id,vacina_id" })))) {
-      aviso(`Vacina registrada em ${linhas.length} ${linhas.length === 1 ? "animal" : "animais"}! ✅`);
+      aviso(`Vacina registrada em ${linhas.length} ${linhas.length === 1 ? "animal" : "animais"}!`);
       await carregarTudo();
       location.hash = "#/pendencias";
     }

@@ -80,7 +80,7 @@ function cardAnimal(a) {
     </div>
     <div class="card-corpo">
       <div class="linha-nome"><h3>${esc(a.nome)}</h3><span class="pilula st-${a.status}">${ROTULOS.status[a.status]}</span></div>
-      <p class="meta">${meta(a.raca, fmtDuracao(mesesDesde(a.data_nascimento)))}</p>
+      <p class="meta">${meta(a.raca, a.data_nascimento && fmtDuracao(mesesDesde(a.data_nascimento)))}</p>
       <p class="meta">${meta(a.cor, ROTULOS.porte[a.porte]) || "&nbsp;"}</p>
       <p class="canil">${esc(nomeCanil(a))}</p>
     </div></a>`;
@@ -107,6 +107,9 @@ function painelNumeros() {
   return `<div class="numeros">${itens.map(([r, n, href, c]) => `<${href ? `a href="${href}"` : "div"} class="numero ${c}"><strong>${n}</strong><span>${r}</span></${href ? "a" : "div"}>`).join("")}</div>`;
 }
 
+// grade (cards) ou lista compacta; a escolha fica guardada neste aparelho
+const modoLista = () => { try { return localStorage.getItem("patinhas-modo") || "grade"; } catch { return "grade"; } };
+
 async function viewLista() {
   const cores = [...new Set(Store.animais.map((a) => (a.cor || "").trim()).filter(Boolean))].sort((x, y) => x.localeCompare(y, "pt-BR"));
   const canisOp = [["_sem", "Sem canil"], ...Store.canis.map((c) => [c.id, c.nome])];
@@ -119,10 +122,15 @@ async function viewLista() {
     ${painelNumeros()}
     <div class="busca-wrap">${ico("search", 24)}
       <input id="busca" class="busca" type="search" placeholder="Buscar nome, raça, canil..." value="${esc(filtros.busca)}" autocomplete="off" aria-label="Buscar animais">
+      <kbd class="atalho" aria-hidden="true">/</kbd>
     </div>
     <div class="barra">
       <button class="btn btn-contorno" id="btnFiltros" aria-expanded="false">${ico("sliders")} Filtros <span id="contFiltros" class="contador" hidden></span></button>
       <select id="f_ordem" class="ordem" aria-label="Ordenar por">${Object.entries(ORDENS).map(([v, r]) => `<option value="${v}" ${v === filtros.ordem ? "selected" : ""}>Ordenar: ${r}</option>`).join("")}</select>
+      <div class="alternar" role="group" aria-label="Modo de exibição">
+        <button type="button" data-modo="grade" aria-label="Ver em grade">${ico("grade", 20)}</button>
+        <button type="button" data-modo="lista" aria-label="Ver em lista">${ico("lista", 20)}</button>
+      </div>
     </div>
     <div id="painel" class="painel" hidden>
       ${sel("canil", "Canil ou local", canisOp, "Todos os canis")}
@@ -144,6 +152,8 @@ async function viewLista() {
     $("#contFiltros").textContent = ativos;
     $("#contFiltros").hidden = !ativos;
     $("#contagem").textContent = `${lista.length} de ${Store.animais.length} ${Store.animais.length === 1 ? "animal" : "animais"}`;
+    $("#lista").className = `grade ${modoLista() === "lista" ? "compacta" : ""}`;
+    for (const b of document.querySelectorAll("[data-modo]")) b.classList.toggle("ativo", b.dataset.modo === modoLista());
     $("#lista").innerHTML = lista.length
       ? lista.map(cardAnimal).join("")
       : Store.animais.length
@@ -151,6 +161,9 @@ async function viewLista() {
         : `<div class="vazio"><p>Nenhum animal cadastrado ainda.</p><p>Toque em <strong>Novo animal</strong> para começar.</p></div>`;
   };
 
+  for (const b of document.querySelectorAll("[data-modo]")) {
+    b.onclick = () => { try { localStorage.setItem("patinhas-modo", b.dataset.modo); } catch {} atualizar(); };
+  }
   $("#busca").oninput = (e) => ((filtros.busca = e.target.value), atualizar());
   $("#btnFiltros").onclick = (e) => {
     const painel = $("#painel");
@@ -205,7 +218,7 @@ async function viewForm(id) {
           ${v.foto_url ? `<img src="${esc(v.foto_url)}" alt="Foto atual">` : `${ico("camera", 44)}<span>Tirar foto ou escolher da galeria</span>`}
         </label>
         <input class="oculto" type="file" id="foto" accept="image/*">
-        <button type="button" class="btn btn-suave btn-ia-foto" id="ia-foto" hidden>${ico("sparkles")} Preencher com IA pela foto</button>
+        <button type="button" class="btn btn-suave btn-ia-foto" id="ia-foto" hidden>${ico("camera")} Preencher pela foto</button>
         <p class="ajuda" id="ajuda-foto">No celular, o aparelho pergunta se você quer abrir a câmera ou a galeria.</p>
       </div>
       ${campo("Nome *", "Como o animal é chamado. Ex.: Mel", `<input id="nome" name="nome" value="${esc(v.nome)}" placeholder="Ex.: Pipoca" required maxlength="80" autocomplete="off">`, "nome")}
@@ -257,7 +270,7 @@ async function viewForm(id) {
       aviso(mensagemErroIA(err), "erro");
     }
     botao.disabled = false;
-    botao.innerHTML = `${ico("sparkles")} Preencher com IA pela foto`;
+    botao.innerHTML = `${ico("camera")} Preencher pela foto`;
   };
 
   $("#form").onsubmit = async (e) => {
@@ -304,7 +317,7 @@ async function viewForm(id) {
       } else {
         salvo = (await q(sb.from("animais").insert(dados).select()))[0];
       }
-      aviso("Animal salvo com sucesso! ✅");
+      aviso("Animal salvo com sucesso!");
       location.hash = `#/animal/${salvo.id}`;
     } catch (err) {
       console.error(err);
@@ -376,7 +389,7 @@ async function registrarDose(a, vacinaId) {
   });
   if (!res) return false;
   await q(sb.from("vacinas_aplicadas").upsert({ animal_id: a.id, vacina_id: vacinaId, data_aplicacao: res.data }, { onConflict: "animal_id,vacina_id" }));
-  aviso("Vacina registrada! ✅");
+  aviso("Vacina registrada!");
   return true;
 }
 
@@ -417,7 +430,7 @@ async function viewFicha(id, aba) {
           <button class="btn btn-contorno-perigo" id="excluir">${ico("trash")} Excluir</button>
         </div>
         <div class="acoes acoes-extra">
-          <button class="btn btn-contorno" id="adocao">${ico("sparkles")} Texto de adoção</button>
+          <button class="btn btn-contorno" id="adocao">${ico("nota")} Texto de adoção</button>
           <button class="btn btn-contorno" id="qr">${ico("qr")} QR Code</button>
         </div>
       </div>
@@ -425,7 +438,7 @@ async function viewFicha(id, aba) {
     <div class="abas" role="tablist">
       <button role="tab" data-aba="dados">Dados</button>
       <button role="tab" data-aba="saude">Saúde ${pend ? `<span class="contador">${pend}</span>` : ""}</button>
-      <button role="tab" data-aba="ia">${ico("sparkles", 18)} Assistente</button>
+      <button role="tab" data-aba="ia">${ico("chat", 18)} Assistente</button>
     </div>
     <div id="conteudo"></div>`;
 

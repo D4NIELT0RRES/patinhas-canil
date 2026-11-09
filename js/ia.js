@@ -18,8 +18,8 @@ const guiaHTML = (especie) => {
   const g = GUIA_ALIMENTOS[especie];
   const lista = (itens) => `<ul>${itens.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
   return `<div class="guia-colunas">
-      <div class="guia-pode"><h4>✅ Pode (com moderação)</h4>${lista(g.pode)}</div>
-      <div class="guia-nao"><h4>⛔ Não pode</h4>${lista(g.naoPode)}</div>
+      <div class="guia-pode"><h4>${ico("check", 16)} Pode (com moderação)</h4>${lista(g.pode)}</div>
+      <div class="guia-nao"><h4>${ico("x", 16)} Não pode</h4>${lista(g.naoPode)}</div>
     </div>
     <p class="ajuda">Se o animal comeu algo da lista “não pode”, ligue para um veterinário na hora, sem esperar sintomas.</p>`;
 };
@@ -133,7 +133,7 @@ function montarChat(raiz, { animal = null, estado = { msgs: [], pensando: false 
 
   const caixa = $(".chat-msgs", raiz);
   const campo = $("textarea", raiz);
-  const boasVindas = `<div class="chat-vazio">${ico("sparkles", 36)}<p><strong>${animal ? `Dúvidas sobre ${esc(animal.nome)}?` : "Como posso ajudar?"}</strong></p><p>${animal ? "Eu já conheço os dados e as vacinas dele(a). " : ""}Toque numa sugestão ou escreva sua pergunta.</p></div>`;
+  const boasVindas = `<div class="chat-vazio">${ico("chat", 36)}<p><strong>${animal ? `Dúvidas sobre ${esc(animal.nome)}?` : "Como posso ajudar?"}</strong></p><p>${animal ? "Eu já conheço os dados e as vacinas dele(a). " : ""}Toque numa sugestão ou escreva sua pergunta.</p></div>`;
 
   const desenhar = () => {
     caixa.innerHTML =
@@ -191,7 +191,7 @@ function montarChat(raiz, { animal = null, estado = { msgs: [], pensando: false 
 // Botão do topo: assistente geral, em janela
 function abrirAssistente() {
   const { el, fechar } = abrirModal(
-    `<div class="modal-topo"><h2>${ico("sparkles", 24)} Assistente IA</h2><button class="icone-btn" data-fechar aria-label="Fechar">✕</button></div><div id="chat-geral"></div>`,
+    `<div class="modal-topo"><h2>${ico("chat", 22)} Assistente</h2><button class="icone-btn" data-fechar aria-label="Fechar">${ico("x", 20)}</button></div><div id="chat-geral"></div>`,
     null,
     "modal-chat"
   );
@@ -203,13 +203,13 @@ function abrirAssistente() {
 
 async function abrirTextoAdocao(a) {
   const { el, fechar } = abrirModal(
-    `<h2>${ico("sparkles", 22)} Texto de adoção</h2><div class="carregando"><div class="roda"></div><p>Escrevendo o texto de ${esc(a.nome)}...</p></div>`,
+    `<h2>${ico("nota", 22)} Texto de adoção</h2><div class="carregando"><div class="roda"></div><p>Escrevendo o texto de ${esc(a.nome)}...</p></div>`,
     null,
     "modal-larga"
   );
   try {
     const r = await chamarIA({ modo: "adocao", animal: contextoAnimal(a) });
-    el.innerHTML = `<h2>${ico("sparkles", 22)} Texto de adoção</h2>
+    el.innerHTML = `<h2>${ico("nota", 22)} Texto de adoção</h2>
       <p class="ajuda">Criado por IA com os dados de ${esc(a.nome)}. Leia e ajuste antes de publicar.</p>
       <textarea class="texto-adocao" rows="9" aria-label="Texto de adoção">${esc(r.texto || "")}</textarea>
       <div class="modal-botoes modal-botoes-col">
@@ -222,7 +222,7 @@ async function abrirTextoAdocao(a) {
     $("[data-copiar]", el).onclick = async () => {
       try {
         await navigator.clipboard.writeText(texto());
-        aviso("Texto copiado! ✅");
+        aviso("Texto copiado!");
       } catch {
         $(".texto-adocao", el).select();
         aviso("Toque e segure no texto para copiar.", "erro");

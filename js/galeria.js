@@ -39,7 +39,7 @@ function abrirCartaoAnimal(lista, posicao) {
     ].filter(Boolean);
     $("#cartao", el).innerHTML = `
       <div class="cartao-foto"><img src="${esc(a.foto_url)}" alt="Foto de ${esc(a.nome)}">
-        <button class="cartao-x icone-btn" data-fechar aria-label="Fechar">✕</button>
+        <button class="cartao-x icone-btn" data-fechar aria-label="Fechar">${ico("x", 20)}</button>
         ${lista.length > 1 ? `<button class="seta seta-esq" data-ant aria-label="Anterior">${ico("voltar", 22)}</button><button class="seta seta-dir" data-prox aria-label="Próximo">${ico("voltar", 22)}</button>` : ""}
       </div>
       <div class="cartao-corpo">

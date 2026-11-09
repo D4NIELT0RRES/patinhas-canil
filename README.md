@@ -63,6 +63,7 @@ O Patinhas substitui planilhas e cadernos no dia a dia do canil. Com ele a ONG:
 | **Assistente na ficha** | Aba **Assistente** de cada animal | Responde já sabendo espécie, idade, porte, doenças, limitações e vacinas do animal. |
 | **Preencher pela foto** | Cadastro do animal | Ao escolher a foto, a IA sugere espécie, porte, raça e cor, e só preenche os campos vazios. |
 | **Texto de adoção** | Ficha do animal | Gera um texto carinhoso para divulgar, editável, com botões **Copiar** e **WhatsApp**. |
+| **Grade ou lista** | Tela Animais | Alterna entre cards com foto grande e lista compacta (a escolha fica guardada no aparelho). No computador, a tecla `/` leva direto à busca. |
 | **Galeria** | Aba **Galeria** | Carrossel de fotos dos animais que passa sozinho (e se pode arrastar), com miniaturas e filtros (todos, para adoção, cachorros, gatos). Tocar na foto abre um cartão com os dados, as vacinas e as observações, com setas para o próximo animal. |
 | **Vacinação em grupo** | Pendências → botão no topo | Para o dia em que o veterinário vacina vários animais: escolha a vacina, a data e o canil, e marque quem tomou. Já vem marcado quem está com a vacina faltando ou vencida. Registra tudo de uma vez, com confirmação. |
 | **Vacinas a vencer** | Lista, ficha e Pendências | Avisa as doses que vencem nos próximos 30 dias, antes de virarem pendência. |
@@ -251,12 +252,12 @@ Se a ONG quiser proteger o acesso no futuro, o caminho é adicionar login (Supab
 
 ## Tecnologias
 
-- **Front-end:** HTML, CSS e JavaScript puros (sem framework e sem build)
+- **Front-end:** HTML, CSS e JavaScript puros (sem framework e sem build), com menu lateral no computador e menu inferior no celular
 - **Banco e arquivos:** [Supabase](https://supabase.com) (PostgreSQL + Storage) via `supabase-js`
 - **IA:** [Claude](https://www.anthropic.com/claude) via `@anthropic-ai/sdk`, em função da Vercel
 - **Tempo real:** Supabase Realtime
 - **Hospedagem:** [Vercel](https://vercel.com) (site estático + função + tarefa agendada)
-- **Fontes:** Fredoka e Nunito (Google Fonts)
+- **Fonte:** Inter (Google Fonts)
 
 ## Acessibilidade e uso no celular
 
